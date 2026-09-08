@@ -28,6 +28,10 @@ It includes:
   and Auth HTTP APIs and also run on SystemLink Server.
 - **Services** — Tag, **Tag Historian** (the *Usage by Month* chart plots tag history; without the historian only
   current values exist), User (`/niuser`), and Auth (`/niauth`).
+- **Roles** — the built-in **Operator** and **Collaborator** roles must both resolve to exactly one policy template
+  each. Collaborator is built in today; Operator becomes built in in an upcoming SystemLink Enterprise release, so
+  on earlier releases a role named `Operator` must exist. The tracker fails fast if either cannot be resolved rather
+  than silently reporting zero for that tier.
 - **Permissions** for the API key that runs the notebooks:
   - create tags and write tag values in the target workspace, and read tag history
   - list users (`/niuser/v1/users/query`)
@@ -143,13 +147,14 @@ rules, in evaluation order:
 
 2. **Collaborator (read-only role).** Checked first among the permission-based roles: a user is a *collaborator* when
    **every** permission they hold is within the read-only Collaborator role's permission set — i.e. a non-empty
-   *subset* of that role's. The Collaborator role is detected automatically by name (`"Collaborator"`); if the instance
-   has no such role, no user is classified as a collaborator. For month *M* a user counts as a collaborator if the tag
+   *subset* of that role's. The Collaborator role is detected automatically by name (`"Collaborator"`); it is a
+   built-in role, so if it cannot be resolved to exactly one policy template the tracker fails fast rather than
+   reporting zero collaborators. For month *M* a user counts as a collaborator if the tag
    shows this role at any point within the trailing `Target_Permission_Period_Months` window ending at *M*;
    collaborators do **not** need to be active in the month.
 
-3. **Operator (target permission).** A user who is **not** a collaborator and whose permissions are a non-empty
-   *subset* of the target role's permission set (`TARGET_ROLE_NAME`, default `"Operator"`). The moment a user holds a
+3. **Operator (role permissions).** A user who is **not** a collaborator and whose permissions are a non-empty
+   *subset* of the built-in **Operator** role's permission set. The moment a user holds a
    permission outside the Collaborator set that the Operator set still covers, they are an Operator; a user holding any
    permission **outside both** sets is neither and falls into Casual/Standard by activity. The same trailing
    `Target_Permission_Period_Months` window applies; operators do **not** need to be active in the month.
@@ -186,7 +191,6 @@ notebook variables (not the environment) except where noted.
 | --- | --- | --- |
 | `TAG_PREFIX` | `"SystemLinkUsageTracking"` | Root prefix for all tags. Must match the exporter and dashboard. |
 | `WORKSPACE_TO_USE` | `None` | Target workspace. `None` = caller's default workspace; otherwise a workspace **name** (e.g. `"DTP"`) or ID. Resolved to a concrete ID before any tag write. |
-| `TARGET_ROLE_NAME` | `"Operator"` | Built-in role whose permission set defines the Operator threshold. A user is an Operator when their own permissions are a non-empty **subset** of this role's permissions; a user with any permission outside it is not an Operator, and a user with no permissions is excluded from all tiers. The read-only **Collaborator** role is detected automatically by name (`"Collaborator"`) and takes precedence over Operator when a user's permissions are a subset of both; if the instance has no Collaborator role, the collaborator count is zero. |
 | `TEST_MAX_USERS` | `None` | `None` (the deployment default) tracks every user. **Set to an integer N only for testing** to cap the run at the first N users; it must be `None` for a real deployment. |
 | `Standard_User_Min_Logins` | `25` | Minimum distinct logins in the lookback window to classify a user as *standard*. |
 | `Standard_User_Period_Months` | `12` | Rolling lookback window (months) for the standard-user login count. |
@@ -233,8 +237,7 @@ use the **same** secret (a different secret yields non-matching tokens for the s
    `Standard_User_Period_Months`, `Target_Permission_Period_Months`, and
    `Include_Partial_Trailing_Month` as needed. For an instance with only one license tier set
    `User_Type_Mode = "single"` (the default `"tiered"` keeps the Casual / Standard / Operator / Collaborator split).
-3. (Optional) To track a different built-in role, change the `TARGET_ROLE_NAME` constant (default `"Operator"`).
-4. Right-click the notebook, select **Publish to SystemLink**, choose the workspace, select **Periodic Execution**,
+3. Right-click the notebook, select **Publish to SystemLink**, choose the workspace, select **Periodic Execution**,
    and click **Publish to SystemLink**.
 
 ### Setting Up a Routine
