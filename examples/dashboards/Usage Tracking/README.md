@@ -244,7 +244,9 @@ The dashboard contains:
 - Four **stat panels** showing the latest Casual / Standard / Operator / Collaborator counts (current value of the summary tags).
 - A stacked **Usage by Month** bar chart of the summary tag history.
 
-Its default time range spans roughly the last year. Adjust the dashboard time range to taste.
+Its time range is fixed to roughly the last year and the time picker is hidden, so the window always matches the
+one-year retention of the summary tags. To change it, edit `time.from` / `time.to` in the dashboard JSON before
+importing, or unset `timepicker.hidden`.
 
 ### Adapting the Dashboard for Single User-Type Mode
 
