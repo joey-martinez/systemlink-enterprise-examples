@@ -48,8 +48,9 @@ instance's dashboard cannot know that a person who is a *standard* user on insta
 *operator* on instance B — counting the two dashboards' numbers together would double-count that person.
 
 The exporter solves this by emitting the **raw, per-user, per-event history** (not the pre-aggregated counts) in a
-portable long-format CSV. In its default mode each user's email is reduced to a stable pseudonymous token (the email
-and user-id representations are configurable — see `Email_Output` and `User_Id_Output`). That raw grain is exactly what
+portable long-format CSV. By default no email column is written at all; the pseudonymized mode reduces each user's
+email to a stable pseudonymous token instead (the email and user-id representations are configurable — see
+`Email_Output` and `User_Id_Output`). That raw grain is exactly what
 a downstream reconciliation needs in order to:
 
 - **De-duplicate people across instances** by matching the pseudonymized email, so a person present on several
@@ -185,7 +186,7 @@ but does not rewrite history already stored in the historian.
 | `Output_Path` | `"usage_tracking_export.csv"` | Path of the CSV to write. |
 | `Start_Time` | `""` | ISO 8601 start of the export window; blank = from the beginning. |
 | `End_Time` | `""` | ISO 8601 end of the export window; blank = now. |
-| `Email_Output` | `"pseudonymized"` | How the email column is written: `"pseudonymized"` (an `email_hash` keyed HMAC-SHA256 token — the only mode that can be unioned/deduplicated across instances), `"plaintext"` (a raw `email` column), or `"none"` (no email column, and the email lookup is skipped entirely so no address is ever read). |
+| `Email_Output` | `"none"` | How the email column is written: `"pseudonymized"` (an `email_hash` keyed HMAC-SHA256 token — the only mode that can be unioned/deduplicated across instances), `"plaintext"` (a raw `email` column), or `"none"` (no email column, and the email lookup is skipped entirely so no address is ever read). |
 | `User_Id_Output` | `"plaintext"` | How the `user_id` column is written: `"plaintext"` (the raw GUID) or `"pseudonymized"` (a keyed HMAC-SHA256 token, still a stable per-user pseudonym). |
 
 ### Environment (provided automatically by SystemLink notebook execution)
@@ -198,7 +199,8 @@ The **Usage Data CSV Exporter** uses one additional secret, `PSEUDONYMIZATION_SE
 cell; replace the default placeholder with a private, random value before deploying. Whenever `Email_Output` or
 `User_Id_Output` is `"pseudonymized"`, the exporter runs a startup check that **fails fast** if the secret is still the
 placeholder, so a publicly-known key can never be used silently. Every instance whose exports are unioned together must
-use the **same** secret (a different secret yields non-matching tokens for the same person).
+use the **same** secret (a different secret yields non-matching tokens for the same person). With the shipped defaults
+(`Email_Output = "none"`, `User_Id_Output = "plaintext"`) no secret is required and the notebook runs as-is.
 
 ## Step-by-step Installation Instructions
 
@@ -297,15 +299,15 @@ cross-instance rollups and privacy-conscious single-instance consumers.
 
 **`Email_Output`** — how (or whether) the user's email appears:
 
-- `"pseudonymized"` (default) — an `email_hash` column holding a deterministic keyed **HMAC-SHA256** token. Each
+- `"pseudonymized"` — an `email_hash` column holding a deterministic keyed **HMAC-SHA256** token. Each
   address is normalized (trimmed + lowercased) and turned into the **full 64-character hex digest**, keyed by the
   `PSEUDONYMIZATION_SECRET` constant defined in the notebook (see *Environment* above). Because the token is
   deterministic and keyed by that shared secret, the same person yields the same `email_hash` on every instance that
   uses the same secret. This is the **only** mode whose files can be unioned and deduplicated across instances.
 - `"plaintext"` — a raw `email` column. Convenient for a single trusted consumer, but writes real addresses into the
   file.
-- `"none"` — no email column at all. The exporter also **skips the user email lookup**, so it never fetches any
-  address — the most private option, best for single-instance consumers that do not need cross-instance dedup.
+- `"none"` (default) — no email column at all. The exporter also **skips the user email lookup**, so it never fetches
+  any address — the most private option, best for single-instance consumers that do not need cross-instance dedup.
 
 **`User_Id_Output`** — how the user id appears:
 
@@ -313,8 +315,9 @@ cross-instance rollups and privacy-conscious single-instance consumers.
 - `"pseudonymized"` — a keyed HMAC-SHA256 token of the id instead, to reduce the personal data in the file. It remains
   a stable per-user pseudonym (all rows for one user share a token), just not the raw GUID.
 
-**Choosing modes.** For cross-instance rollups keep `Email_Output = "pseudonymized"`. For a single instance that does
-not need dedup, `Email_Output = "none"` is the most private (no email is ever read). To further reduce PII, set
+**Choosing modes.** For cross-instance rollups set `Email_Output = "pseudonymized"` and replace
+`PSEUDONYMIZATION_SECRET` with a private value. For a single instance that does not need dedup, the default
+`Email_Output = "none"` is the most private (no email is ever read). To further reduce PII, set
 `User_Id_Output = "pseudonymized"`.
 
 > **A CSV with `Email_Output` of `"none"` or `"plaintext"` cannot be unioned across instances.** The cross-instance
@@ -330,7 +333,8 @@ not need dedup, `Email_Output = "none"` is the most private (no email is ever re
 To produce a fleet-wide true-up of casual / standard / operator / collaborator users:
 
 1. **Export** a CSV from each instance over the same time window (matching `Tag_Prefix` and time range), with
-   `Email_Output = "pseudonymized"` (the default) so every file carries the `email_hash` the union keys on.
+   `Email_Output = "pseudonymized"` (not the default — set it explicitly, along with a real `PSEUDONYMIZATION_SECRET`)
+   so every file carries the `email_hash` the union keys on.
 2. **Union** all rows and **deduplicate identities** by `email_hash` — the same person on multiple instances collapses
    to one identity. For users with a blank `email_hash`, fall back to an instance-qualified `user_id` or exclude them.
 3. For the month(s) of interest, per person: **union** all `activity_iso` timestamps and combine the `role` column —
