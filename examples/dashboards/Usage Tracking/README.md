@@ -20,6 +20,26 @@ It includes:
   history to a long-format CSV, used to true-up usage across multiple SystemLink instances. The identifying columns
   are configurable (see `Email_Output` and `User_Id_Output` below).
 
+## Prerequisites
+
+- **SystemLink** — a SystemLink Enterprise release whose Grafana dashboards provide the **SystemLink Tags** data
+  source (`ni-sltag-datasource`); that data source is what the dashboard reads. The shipped JSON was exported from
+  Grafana 12.3.1 against data source plugin 5.1.0. The notebooks themselves use only the Tag, Tag Historian, User,
+  and Auth HTTP APIs and also run on SystemLink Server.
+- **Services** — Tag, **Tag Historian** (the *Usage by Month* chart plots tag history; without the historian only
+  current values exist), User (`/niuser`), and Auth (`/niauth`).
+- **Permissions** for the API key that runs the notebooks:
+  - create tags and write tag values in the target workspace, and read tag history
+  - list users (`/niuser/v1/users/query`)
+  - read authorization policies and policy templates (`/niauth`) — required to classify Operator vs Collaborator
+- **Workspace** — a concrete workspace to hold the tags. The nitag v2 endpoints are workspace-qualified, so if the
+  API key has no default workspace you must set `WORKSPACE_TO_USE` (tracker) or `Workspace` (exporter) explicitly.
+  Both notebooks fail fast rather than guessing.
+- **Python packages** — `requests` (both notebooks) and `pandas` (tracker only). Both are present in the standard
+  SystemLink notebook execution environment; no additional packages are needed.
+- **Environment variables** — `SYSTEMLINK_HTTP_URI` and `SYSTEMLINK_API_KEY`, supplied automatically when the
+  notebooks run on-platform (see *Environment* below).
+
 ## Purpose
 
 The two consumers of the tracked tags serve different audiences and answer different questions.
@@ -202,7 +222,7 @@ placeholder, so a publicly-known key can never be used silently. Every instance 
 use the **same** secret (a different secret yields non-matching tokens for the same person). With the shipped defaults
 (`Email_Output = "none"`, `User_Id_Output = "plaintext"`) no secret is required and the notebook runs as-is.
 
-## Step-by-step Installation Instructions
+## Setup Instructions
 
 ### Publishing the Tracker Notebook
 
@@ -267,6 +287,29 @@ dashboard's panels at that tag (no separate dashboard file is needed). After imp
 > Prefer editing the JSON before import? Make the same changes directly in a copy of the panels' `targets`
 > arrays (swap each `path` to the `ActiveUsers` tag and delete the extra targets), then
 > import that JSON. Either way there is no additional file to maintain in the repository.
+
+## Dashboard Features
+
+**Visualization overview.** Four stat panels across the top show the current headcount for each tier — Casual,
+Standard, Operator, and Collaborator — each reading the current value of its summary tag. Below them, the stacked
+*Usage by Month* bar chart plots the summary tag history as one bar per calendar month, with the four tiers stacked
+within each bar.
+
+**Key metrics.** Casual and Standard classify users by *how often* they were active in a month; Operator and
+Collaborator classify them by *permission*. The exact rules are in
+*How the Casual / Standard / Operator / Collaborator Counts Are Derived*.
+
+**Data flow.** The tracker notebook writes one role tag per user plus the monthly summary count tags into the Tag
+Historian, and the dashboard reads those tags directly through the SystemLink Tags data source. No computation runs
+at view time, so the dashboard renders at the same speed regardless of how many users the instance has.
+
+**Interactive features.** The dashboard is deliberately presentational: it defines no template variables, and the
+time picker is hidden so the window always matches the one-year retention of the summary tags. The only import-time
+choice is which SystemLink Tags data source to bind to, since the panels reference it as a template input.
+
+**Use cases.** See how the active population is distributed across license tiers, watch whether Operator or Standard
+usage is trending toward a tier limit, and confirm whether a rollout changed how many people actually log in. For a
+fleet-wide count that counts each person once, use the CSV exporter described below.
 
 ## Exporting to CSV and Cross-Instance Usage Reconciliation
 
@@ -350,6 +393,20 @@ The result is a de-duplicated casual / standard / operator / collaborator count 
 the raw inputs (timestamps and the role); the classification thresholds and priority are **not** embedded
 in the file, so the reconciling process must apply the same parameter values the tracker uses for the numbers to
 agree with each instance's own dashboard.
+
+## Troubleshooting
+
+| Symptom | Likely cause and fix |
+| --- | --- |
+| Notebook raises `SYSTEMLINK_HTTP_URI environment variable must be set` or the same for `SYSTEMLINK_API_KEY` | The notebook is running outside a SystemLink execution. Both variables are supplied automatically on-platform; set them yourself when running elsewhere. |
+| Notebook raises `A workspace ID is required` or `Could not resolve a workspace ID` | The API key has no default workspace. Set `WORKSPACE_TO_USE` (tracker) or `Workspace` (exporter) to a workspace name or ID. |
+| Run is slow and appears to stall | The Tag and Tag Historian services rate-limit (HTTP 429) on large tenants. Both notebooks retry with exponential backoff and self-throttle to the allowed rate; let the run finish. |
+| HTTP 403 from `/niauth` or `/niuser` | The API key cannot read users or authorization policies. Both are required for Operator/Collaborator classification. |
+| Dashboard panels show *No data* | The tracker has not completed a run yet, the dashboard was bound to the wrong data source at import, or `Tag_Prefix` does not match the tracker's `TAG_PREFIX`. |
+| Stat panels populate but *Usage by Month* is empty | Summary points are written once per calendar month, so a newly deployed tracker shows nothing until it has classified at least one closed month. |
+| Tag history is capped at roughly 30 days | The historian honored only its default window. The tracker sets both `nitagHistoryTTLDays` and `nitagMaxHistoryDays` for this reason; for tags created before that, set `REASSERT_TAG_METADATA = True` for a single run to push the retention values onto existing tags. |
+| Exporter raises `PSEUDONYMIZATION_SECRET must be changed ...` | `Email_Output` or `User_Id_Output` is `"pseudonymized"` while the secret is still the placeholder. Replace the secret, or keep the default `Email_Output = "none"`. |
+| Exported CSV has fewer users than expected | Users with no permissions are not tracked at all, and a user is skipped when its tag has neither in-range history nor a current value inside the range. |
 
 ## Caveats
 
