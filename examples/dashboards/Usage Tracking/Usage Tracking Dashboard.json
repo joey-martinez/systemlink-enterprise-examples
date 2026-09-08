@@ -566,7 +566,7 @@
   },
   "time": {
     "from": "now-1y",
-    "to": "now+6M"
+    "to": "now"
   },
   "timepicker": {
     "hidden": true

@@ -92,10 +92,10 @@ classifies users per month, and writes the results to count tags:
 | Tag | Type | Retention | Meaning |
 | --- | --- | --- | --- |
 | `SystemLinkUsageTracking.UserRole.<userId>` | Int32 | duration (~18 months) | latest activity time / role code (0 none, 1 Operator, 2 Collaborator) per user |
-| `SystemLinkUsageTracking.Summary.CasualUsers` | Int32 | duration (~1 year) | casual-user count as of the run |
-| `SystemLinkUsageTracking.Summary.StandardUsers` | Int32 | duration (~1 year) | standard-user count as of the run |
-| `SystemLinkUsageTracking.Summary.OperatorUsers` | Int32 | duration (~1 year) | operator (write-permission) count |
-| `SystemLinkUsageTracking.Summary.CollaboratorUsers` | Int32 | duration (~1 year) | collaborator (read-only) count |
+| `SystemLinkUsageTracking.Summary.CasualUsers` | Int32 | duration (~1 year) | casual-user count, one point per calendar month |
+| `SystemLinkUsageTracking.Summary.StandardUsers` | Int32 | duration (~1 year) | standard-user count, one point per calendar month |
+| `SystemLinkUsageTracking.Summary.OperatorUsers` | Int32 | duration (~1 year) | operator (write-permission) count, one point per calendar month |
+| `SystemLinkUsageTracking.Summary.CollaboratorUsers` | Int32 | duration (~1 year) | collaborator (read-only) count, one point per calendar month |
 
 > **Single user-type mode.** When `User_Type_Mode = "single"` (see *Important Parameters*) the tracker does **not**
 > write the four Casual/Standard/Operator/Collaborator tags above. Instead it writes a single `SystemLinkUsageTracking.Summary.ActiveUsers`
@@ -104,8 +104,8 @@ classifies users per month, and writes the results to count tags:
 
 All tags use rolling retention sized to what the dashboard actually needs rather than growing without bound. The
 per-user and summary tags use **duration** retention: the per-user window (~18 months) covers the classification
-lookback, and the summary window (~1 year) covers the dashboard's `now-1y` plot. Writing the current counts once per
-day builds up the monthly trend directly in the Tag Historian within that window. The retention day counts are
+lookback, and the summary window (~1 year) covers the dashboard's `now-1y` plot. Writing one summary point per
+calendar month builds the monthly trend directly in the Tag Historian within that window. The retention day counts are
 defined at the top of the tracker notebook and mirror the analysis parameters below; keep them in sync if those
 parameters change.
 
