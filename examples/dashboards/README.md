@@ -63,7 +63,7 @@ This Grafana dashboard visualizes test yield metrics and throughput data for man
 - Station-Level Analysis: Includes "by Station" bar gauge visualization to identify which systems/stations have lower yield, enabling targeted troubleshooting
 - Smart Thresholding: Yield values use color coding (Red <60%, Yellow 60-80%, Green >80%) to immediately highlight performance issues
 
-### [SystemLink Usage Tracking](./Usage Tracking/)
+### [SystemLink Usage Tracking](./Usage%20Tracking/)
 Tracks SystemLink user activity and license-tier usage. A daily notebook classifies every user into Casual, Standard, Operator, and Collaborator tiers from their permissions and activity, writes per-user role tags and monthly summary count tags to the Tag Historian, and this Grafana dashboard reads those tags directly — no computation notebook is required at view time.
 
 **Key Features:**
