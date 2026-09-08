@@ -536,11 +536,7 @@
               "SystemLinkUsageTracking.Summary.CasualUsers": "Casual Users",
               "SystemLinkUsageTracking.Summary.CollaboratorUsers": "Collaborator Users",
               "SystemLinkUsageTracking.Summary.OperatorUsers": "Operator Users",
-              "SystemLinkUsageTracking.Summary.StandardUsers": "Standard Users",
-              "SystemLinkUsageTracking.Summary.TargetPermissionUsers": "Operator Users",
-              "UsageTrackingTieredMode.Summary.CasualUsers": "Casual Users",
-              "UsageTrackingTieredMode.Summary.StandardUsers": "Standard Users",
-              "UsageTrackingTieredMode.Summary.TargetPermissionUsers": "Operator Users"
+              "SystemLinkUsageTracking.Summary.StandardUsers": "Standard Users"
             }
           }
         },
