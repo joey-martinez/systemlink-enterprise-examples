@@ -55,8 +55,8 @@ is intended for administrators and license owners who need an ongoing, self-upda
 running any analysis by hand. Because the tracker has already reduced the raw per-user activity into the
 casual / standard / operator / collaborator counts and stored them as historized tags, the dashboard is purely presentational:
 
-- **Current headcount by tier** — the four stat panels show today's casual, standard, operator, and collaborator counts, giving an
-  immediate read on how the active population is distributed across license tiers.
+- **Current headcount by tier** — the stat panels show today's casual, standard, operator, and collaborator counts
+  plus a combined total, giving an immediate read on how the active population is distributed across license tiers.
 - **Trend over time** — the *Usage by Month* chart plots the monthly history, so you can see whether standard/operator
   usage is growing, plateauing, or seasonal. This is the view that supports questions like *"are we approaching a
   license tier limit?"* or *"did that rollout change how many people log in?"*
@@ -264,7 +264,8 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 
 The dashboard contains:
 
-- Four **stat panels** showing the latest Casual / Standard / Operator / Collaborator counts (current value of the summary tags).
+- Five **stat panels** showing the latest Casual / Standard / Operator / Collaborator counts plus a combined total,
+  each with a sparkline of that tier's recent history.
 - A stacked **Usage by Month** bar chart of the summary tag history.
 
 Its time range is fixed to roughly the last year and the time picker is hidden, so the window always matches the
@@ -278,9 +279,9 @@ The shipped `Usage Tracking Dashboard.json` is built for the four-tier tags. Whe
 dashboard's panels at that tag (no separate dashboard file is needed). After importing the dashboard, open it, click
 **Edit**, and:
 
-1. **Stat panels.** Delete the *Standard Users*, *Operator Users*, and *Collaborator Users* stat panels. Edit the
-   remaining stat panel: point its tag query at `SystemLinkUsageTracking.Summary.ActiveUsers` (query type **Current**)
-   and rename the panel title to *Active Users*.
+1. **Stat panels.** Delete the *Standard Users*, *Operator Users*, *Collaborator Users*, and *Total Tracked Users*
+   stat panels. Edit the remaining stat panel: point its tag query at
+   `SystemLinkUsageTracking.Summary.ActiveUsers` (query type **History**) and rename the panel title to *Active Users*.
 2. **Usage by Month (bar chart).** Edit the panel and remove the *Standard Users*, *Operator Users*, and
    *Collaborator Users* queries, leaving one query pointed at `SystemLinkUsageTracking.Summary.ActiveUsers` (query
    type **History**). In the panel's field/override settings, update the series display name to *Active Users* (remove
@@ -293,8 +294,9 @@ dashboard's panels at that tag (no separate dashboard file is needed). After imp
 
 ## Dashboard Features
 
-**Visualization overview.** Four stat panels across the top show the current headcount for each tier — Casual,
-Standard, Operator, and Collaborator — each reading the current value of its summary tag. Below them, the stacked
+**Visualization overview.** Five stat panels across the top show the latest headcount for each tier — Casual,
+Standard, Operator, and Collaborator — plus a combined total. Each reads its summary tag's history and displays the
+most recent value over a sparkline of the preceding months. Below them, the stacked
 *Usage by Month* bar chart plots the summary tag history as one bar per calendar month, with the four tiers stacked
 within each bar.
 
