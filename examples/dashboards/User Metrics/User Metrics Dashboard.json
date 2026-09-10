@@ -118,7 +118,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.CasualUsers",
+          "path": "SystemLinkUserMetrics.Summary.CasualUsers",
           "properties": false,
           "refId": "A",
           "showTagPath": false,
@@ -189,7 +189,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.StandardUsers",
+          "path": "SystemLinkUserMetrics.Summary.StandardUsers",
           "properties": false,
           "refId": "A",
           "showTagPath": false,
@@ -260,7 +260,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.OperatorUsers",
+          "path": "SystemLinkUserMetrics.Summary.OperatorUsers",
           "properties": false,
           "refId": "A",
           "showTagPath": false,
@@ -331,7 +331,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.CollaboratorUsers",
+          "path": "SystemLinkUserMetrics.Summary.CollaboratorUsers",
           "properties": false,
           "refId": "A",
           "showTagPath": false,
@@ -402,7 +402,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.CasualUsers",
+          "path": "SystemLinkUserMetrics.Summary.CasualUsers",
           "properties": false,
           "refId": "A",
           "showTagPath": false,
@@ -414,7 +414,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.StandardUsers",
+          "path": "SystemLinkUserMetrics.Summary.StandardUsers",
           "properties": false,
           "refId": "B",
           "showTagPath": false,
@@ -426,7 +426,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.OperatorUsers",
+          "path": "SystemLinkUserMetrics.Summary.OperatorUsers",
           "properties": false,
           "refId": "C",
           "showTagPath": false,
@@ -438,7 +438,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.CollaboratorUsers",
+          "path": "SystemLinkUserMetrics.Summary.CollaboratorUsers",
           "properties": false,
           "refId": "D",
           "showTagPath": false,
@@ -618,7 +618,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.CasualUsers",
+          "path": "SystemLinkUserMetrics.Summary.CasualUsers",
           "properties": false,
           "refId": "A",
           "showTagPath": false,
@@ -630,7 +630,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.StandardUsers",
+          "path": "SystemLinkUserMetrics.Summary.StandardUsers",
           "properties": false,
           "refId": "B",
           "showTagPath": false,
@@ -642,7 +642,7 @@
             "type": "ni-sltag-datasource",
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
-          "path": "SystemLinkUsageTracking.Summary.OperatorUsers",
+          "path": "SystemLinkUserMetrics.Summary.OperatorUsers",
           "properties": false,
           "refId": "C",
           "showTagPath": false,
@@ -655,7 +655,7 @@
             "uid": "${DS_SYSTEMLINK_TAGS}"
           },
           "hide": false,
-          "path": "SystemLinkUsageTracking.Summary.CollaboratorUsers",
+          "path": "SystemLinkUserMetrics.Summary.CollaboratorUsers",
           "properties": false,
           "refId": "D",
           "showTagPath": false,
@@ -663,7 +663,7 @@
           "workspace": ""
         }
       ],
-      "title": "Usage by Month",
+      "title": "Users by Month",
       "transformations": [
         {
           "id": "merge",
@@ -676,10 +676,10 @@
             "includeByName": {},
             "indexByName": {},
             "renameByName": {
-              "SystemLinkUsageTracking.Summary.CasualUsers": "Casual Users",
-              "SystemLinkUsageTracking.Summary.CollaboratorUsers": "Collaborator Users",
-              "SystemLinkUsageTracking.Summary.OperatorUsers": "Operator Users",
-              "SystemLinkUsageTracking.Summary.StandardUsers": "Standard Users"
+              "SystemLinkUserMetrics.Summary.CasualUsers": "Casual Users",
+              "SystemLinkUserMetrics.Summary.CollaboratorUsers": "Collaborator Users",
+              "SystemLinkUserMetrics.Summary.OperatorUsers": "Operator Users",
+              "SystemLinkUserMetrics.Summary.StandardUsers": "Standard Users"
             }
           }
         },
@@ -715,8 +715,8 @@
     "hidden": true
   },
   "timezone": "utc",
-  "title": "SystemLink Usage Tracking",
-  "uid": "systemlinkusagetracking",
+  "title": "SystemLink User Metrics",
+  "uid": "systemlinkusermetrics",
   "version": 1,
   "weekStart": ""
 }

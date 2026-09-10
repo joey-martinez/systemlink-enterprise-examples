@@ -1,36 +1,36 @@
-# Usage Tracking Dashboard Example
+# User Metrics Dashboard Example
 
 ## Overview
 
-This example provides a **tag-native** SystemLink user-usage tracking workflow. It records one INT role tag per user,
+This example provides a **tag-native** SystemLink user-metrics workflow. It records one INT role tag per user,
 computes the monthly user classification (casual / standard / operator / collaborator) inside the tracker, and writes
 the results to a small set of **summary** count tags. A Grafana dashboard reads those tags directly
 through the **SystemLink Tag data source** — no computation notebook is required at view time.
 
-The solution runs on both **SystemLink Enterprise (SLE)** and **SystemLink Server (SLS)**: it uses only the Tag,
-Tag Historian, User, and Auth HTTP APIs, which are common to both platforms.
+The solution runs on all SystemLink products, including **SystemLink Enterprise (SLE)** and **SystemLink Server
+(SLS)**: it uses only the Tag, Tag Historian, User, and Auth HTTP APIs, which are common to all of them.
 
 It includes:
 
-- **Usage Data Tracker** (`Usage Data Tracker.ipynb`) — runs on a daily routine; writes the per-user tags and the
+- **User Metrics Tracker** (`User Metrics Tracker.ipynb`) — runs on a daily routine; writes the per-user tags and the
   summary count tags.
-- **Usage Tracking Dashboard** (`Usage Tracking Dashboard.json`) — a Grafana dashboard that reads the summary
+- **User Metrics Dashboard** (`User Metrics Dashboard.json`) — a Grafana dashboard that reads the summary
   tag history via the `ni-sltag-datasource` data source.
-- **Usage Data CSV Exporter** (`Usage Data CSV Exporter.ipynb`) — optional on-demand export of the per-user tag
+- **User Metrics CSV Exporter** (`User Metrics CSV Exporter.ipynb`) — optional on-demand export of the per-user tag
   history to a long-format CSV, used to true-up usage across multiple SystemLink instances. The identifying columns
   are configurable (see `Email_Output` and `User_Id_Output` below).
 
 ## Prerequisites
 
-- **SystemLink** — a SystemLink Enterprise release whose Grafana dashboards provide the **SystemLink Tags** data
-  source (`ni-sltag-datasource`); that data source is what the dashboard reads. The shipped JSON was exported from
-  Grafana 12.3.1 against data source plugin 5.1.0. The notebooks themselves use only the Tag, Tag Historian, User,
-  and Auth HTTP APIs and also run on SystemLink Server.
-- **Services** — Tag, **Tag Historian** (the *Usage by Month* chart plots tag history; without the historian only
+- **SystemLink** — a SystemLink release whose Grafana dashboards provide the **SystemLink Tags** data
+  source (`ni-sltag-datasource`); that data source is what the dashboard reads. Requires **Grafana 12.3.1 or later**
+  and **data source plugin 5.1.0 or later** — the shipped JSON was exported against those versions. The notebooks
+  themselves use only the Tag, Tag Historian, User, and Auth HTTP APIs, which are common to all SystemLink products.
+- **Services** — Tag, **Tag Historian** (the *Users by Month* chart plots tag history; without the historian only
   current values exist), User (`/niuser`), and Auth (`/niauth`).
 - **Roles** — the built-in **Operator** and **Collaborator** roles must both resolve to exactly one policy template
-  each. Collaborator is built in today; Operator becomes built in in an upcoming SystemLink Enterprise release, so
-  on earlier releases a role named `Operator` must exist. The tracker fails fast if either cannot be resolved rather
+  each. Collaborator is built in today; Operator becomes built in in an upcoming SystemLink release, so on earlier
+  releases a role named `Operator` must exist. The tracker fails fast if either cannot be resolved rather
   than silently reporting zero for that tier.
 - **Permissions** for the API key that runs the notebooks:
   - create tags and write tag values in the target workspace, and read tag history
@@ -50,14 +50,14 @@ The two consumers of the tracked tags serve different audiences and answer diffe
 
 ### The dashboard — at-a-glance licensing posture for a single instance
 
-The **Usage Tracking Dashboard** answers *"how is this SystemLink instance being used, and where is it trending?"* It
+The **User Metrics Dashboard** answers *"how is this SystemLink instance being used, and where is it trending?"* It
 is intended for administrators and license owners who need an ongoing, self-updating view of user activity without
 running any analysis by hand. Because the tracker has already reduced the raw per-user activity into the
 casual / standard / operator / collaborator counts and stored them as historized tags, the dashboard is purely presentational:
 
 - **Current headcount by tier** — the stat panels show today's casual, standard, operator, and collaborator counts
   plus a combined total, giving an immediate read on how the active population is distributed across license tiers.
-- **Trend over time** — the *Usage by Month* chart plots the monthly history, so you can see whether standard/operator
+- **Trend over time** — the *Users by Month* chart plots the monthly history, so you can see whether standard/operator
   usage is growing, plateauing, or seasonal. This is the view that supports questions like *"are we approaching a
   license tier limit?"* or *"did that rollout change how many people log in?"*
 
@@ -66,7 +66,7 @@ meant to be left running and glanced at, not exported or post-processed.
 
 ### The CSV export — cross-instance true-up and auditing
 
-The **Usage Data CSV Exporter** answers a question the dashboard deliberately cannot: *"how many distinct people are
+The **User Metrics CSV Exporter** answers a question the dashboard deliberately cannot: *"how many distinct people are
 using SystemLink across all of our instances, and how do they classify when we count each person only once?"* A single
 instance's dashboard cannot know that a person who is a *standard* user on instance A is the same person as an
 *operator* on instance B — counting the two dashboards' numbers together would double-count that person.
@@ -95,13 +95,13 @@ de-duplicated, multi-instance total**. They are derived from the same per-user t
 Once per day the tracker queries all users, determines each user's role, and writes one
 INT role tag per user:
 
-- **Tag path:** `SystemLinkUsageTracking.UserRole.<userId>`
+- **Tag path:** `SystemLinkUserMetrics.UserRole.<userId>`
 - **Tag value:** an INT role code — `0` (neither), `1` (Operator), or `2` (Collaborator).
 - **Value timestamp:** the user's latest activity time (the user's `updated` field).
 
 A new value is written **only when the user's activity time has advanced** past the last recorded point. Because the
 Tag Historian stores every written value with its timestamp, the full per-user activity-and-role history is
-preserved directly in tags — with no Dataframe Service or file storage. Each recorded point therefore represents a
+preserved directly in tags — with no DataFrame Service or file storage. Each recorded point therefore represents a
 day on which the user was newly active (a login proxy).
 
 > **Activity signal caveat.** The activity timestamp is the user record's `updated` field, **not** a literal
@@ -116,14 +116,14 @@ classifies users per month, and writes the results to count tags:
 
 | Tag | Type | Retention | Meaning |
 | --- | --- | --- | --- |
-| `SystemLinkUsageTracking.UserRole.<userId>` | Int32 | duration (~18 months) | latest activity time / role code (0 none, 1 Operator, 2 Collaborator) per user |
-| `SystemLinkUsageTracking.Summary.CasualUsers` | Int32 | duration (~1 year) | casual-user count, one point per calendar month |
-| `SystemLinkUsageTracking.Summary.StandardUsers` | Int32 | duration (~1 year) | standard-user count, one point per calendar month |
-| `SystemLinkUsageTracking.Summary.OperatorUsers` | Int32 | duration (~1 year) | operator (write-permission) count, one point per calendar month |
-| `SystemLinkUsageTracking.Summary.CollaboratorUsers` | Int32 | duration (~1 year) | collaborator (read-only) count, one point per calendar month |
+| `SystemLinkUserMetrics.UserRole.<userId>` | Int32 | duration (~18 months) | latest activity time / role code (0 none, 1 Operator, 2 Collaborator) per user |
+| `SystemLinkUserMetrics.Summary.CasualUsers` | Int32 | duration (~1 year) | casual-user count, one point per calendar month |
+| `SystemLinkUserMetrics.Summary.StandardUsers` | Int32 | duration (~1 year) | standard-user count, one point per calendar month |
+| `SystemLinkUserMetrics.Summary.OperatorUsers` | Int32 | duration (~1 year) | operator (write-permission) count, one point per calendar month |
+| `SystemLinkUserMetrics.Summary.CollaboratorUsers` | Int32 | duration (~1 year) | collaborator (read-only) count, one point per calendar month |
 
 > **Single user-type mode.** When `User_Type_Mode = "single"` (see *Important Parameters*) the tracker does **not**
-> write the four Casual/Standard/Operator/Collaborator tags above. Instead it writes a single `SystemLinkUsageTracking.Summary.ActiveUsers`
+> write the four Casual/Standard/Operator/Collaborator tags above. Instead it writes a single `SystemLinkUserMetrics.Summary.ActiveUsers`
 > tag (Int32, ~1 year duration) holding the count of distinct users active in each month. All the retention,
 > monthly-point, and anchoring behavior described below applies identically to this tag.
 
@@ -169,6 +169,11 @@ Priority is **collaborator > operator > standard > casual**: each user is counte
 higher-privilege classification winning. The counts written to the summary tags are `len(casual)`, `len(standard)`,
 `len(operators)`, and `len(collaborators)` for the most recent month.
 
+> **Administrators and other broadly-permissioned users are counted.** Both role rules require a user's permissions to
+> be a *subset* of that role's, so anyone holding permissions beyond both roles — administrators most obviously — is
+> not a collaborator or an operator. They are still tracked and still counted: they fall through to **Casual or
+> Standard by activity**, like any other permissioned user.
+
 > **Single user-type mode.** When `User_Type_Mode = "single"` only rule 1 (active-in-the-month) is evaluated: every
 > user with a recorded activity timestamp inside month *M* is counted once as an **Active User**. The standard/operator/collaborator
 > rules and the collaborator > operator > standard > casual priority do not apply, and the single `Summary.ActiveUsers` count equals
@@ -182,14 +187,14 @@ higher-privilege classification winning. The counts written to the summary tags 
 
 ## Important Parameters
 
-### Usage Data Tracker (`Usage Data Tracker.ipynb`)
+### User Metrics Tracker (`User Metrics Tracker.ipynb`)
 
 Set these in the first code cell and in the classification-parameters cell before publishing. They are read from
 notebook variables (not the environment) except where noted.
 
 | Parameter | Default | Notes |
 | --- | --- | --- |
-| `TAG_PREFIX` | `"SystemLinkUsageTracking"` | Root prefix for all tags. Must match the exporter and dashboard. |
+| `TAG_PREFIX` | `"SystemLinkUserMetrics"` | Root prefix for all tags. Must match the exporter and dashboard. |
 | `WORKSPACE_TO_USE` | `None` | Target workspace. `None` = caller's default workspace; otherwise a workspace **name** (e.g. `"DTP"`) or ID. Resolved to a concrete ID before any tag write. |
 | `TEST_MAX_USERS` | `None` | `None` (the deployment default) tracks every user. **Set to an integer N only for testing** to cap the run at the first N users; it must be `None` for a real deployment. |
 | `Standard_User_Min_Logins` | `25` | Minimum distinct logins in the lookback window to classify a user as *standard*. |
@@ -201,13 +206,13 @@ notebook variables (not the environment) except where noted.
 The classification parameters are **baked into the summary tags at write time**. Changing them changes future counts
 but does not rewrite history already stored in the historian.
 
-### Usage Data CSV Exporter (`Usage Data CSV Exporter.ipynb`)
+### User Metrics CSV Exporter (`User Metrics CSV Exporter.ipynb`)
 
 | Parameter | Default | Notes |
 | --- | --- | --- |
-| `Tag_Prefix` | `"SystemLinkUsageTracking"` | Must match the tracker's `TAG_PREFIX`. |
+| `Tag_Prefix` | `"SystemLinkUserMetrics"` | Must match the tracker's `TAG_PREFIX`. |
 | `Workspace` | `""` | Workspace **name** (e.g. `"DTP"`), ID, or blank for the default workspace. Resolved to a concrete ID before querying. |
-| `Output_Path` | `"usage_tracking_export.csv"` | Path of the CSV to write. |
+| `Output_Path` | `"user_metrics_export.csv"` | Path of the CSV to write. |
 | `Start_Time` | `""` | ISO 8601 start of the export window; blank = from the beginning. |
 | `End_Time` | `""` | ISO 8601 end of the export window; blank = now. |
 | `Email_Output` | `"none"` | How the email column is written: `"pseudonymized"` (an `email_hash` keyed HMAC-SHA256 token — the only mode that can be unioned/deduplicated across instances), `"plaintext"` (a raw `email` column), or `"none"` (no email column, and the email lookup is skipped entirely so no address is ever read). |
@@ -218,7 +223,7 @@ but does not rewrite history already stored in the historian.
 Both notebooks read `SYSTEMLINK_HTTP_URI` (base URL) and `SYSTEMLINK_API_KEY` from the environment. SystemLink
 supplies these when the notebook runs as a routine/execution, so no manual configuration is needed on-platform.
 
-The **Usage Data CSV Exporter** uses one additional secret, `PSEUDONYMIZATION_SECRET` — the HMAC key used for the
+The **User Metrics CSV Exporter** uses one additional secret, `PSEUDONYMIZATION_SECRET` — the HMAC key used for the
 `email_hash` and pseudonymized `user_id` tokens. It is a **hardcoded constant** at the top of the exporter's setup
 cell; replace the default placeholder with a private, random value before deploying. Whenever `Email_Output` or
 `User_Id_Output` is `"pseudonymized"`, the exporter runs a startup check that **fails fast** if the secret is still the
@@ -231,7 +236,7 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 ### Publishing the Tracker Notebook
 
 1. From the SLE main menu open **Automation >> Scripts**, click **Upload Files**, and select
-   _Usage Data Tracker.ipynb_.
+   _User Metrics Tracker.ipynb_.
 2. In the first code cell set `TAG_PREFIX` and `WORKSPACE_TO_USE`, and set `TEST_MAX_USERS = None` for a real
    deployment. In the classification-parameters cell adjust `Standard_User_Min_Logins`,
    `Standard_User_Period_Months`, `Target_Permission_Period_Months`, and
@@ -245,10 +250,10 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 1. Navigate to **Automation >> Routines** and click **Create routine**.
 2. Under **General**, provide a name and description and ensure **Routine State** is enabled.
 3. Under **Automation configuration**, set the **Event** to **at a specific date and time**, choose a start time,
-   leave **Repeat** as **Daily**, leave **Execute a notebook** selected, and choose the _Usage Data Tracker_ notebook.
+   leave **Repeat** as **Daily**, leave **Execute a notebook** selected, and choose the _User Metrics Tracker_ notebook.
    Click **Create**.
 4. Use **Automation >> Execution** to monitor runs. After each successful run, confirm the
-   `SystemLinkUsageTracking.UserRole.*` and `SystemLinkUsageTracking.Summary.*` tags exist under **Tags** in SLE.
+   `SystemLinkUserMetrics.UserRole.*` and `SystemLinkUserMetrics.Summary.*` tags exist under **Tags** in SLE.
    Allow the routine to run for several days so the summary trend accumulates.
 
 > **SystemLink Server (SLS):** Deploy the notebook as an analysis routine set to run once daily. The tag writes use
@@ -259,14 +264,14 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 1. Ensure the **SystemLink Tags** data source (`ni-sltag-datasource`) is available in your Grafana instance.
 2. From the SLE main menu, go to **Overview >> Dashboards**.
 3. Click **New** in the upper-right corner and select **Import**.
-4. Click **Upload dashboard JSON file** and select _Usage Tracking Dashboard.json_.
+4. Click **Upload dashboard JSON file** and select _User Metrics Dashboard.json_.
 5. Change the dashboard name if needed, select a folder, modify the UID to ensure uniqueness, and click **Import**.
 
 The dashboard contains:
 
 - Five **stat panels** showing the latest Casual / Standard / Operator / Collaborator counts plus a combined total,
   each with a sparkline of that tier's recent history.
-- A stacked **Usage by Month** bar chart of the summary tag history.
+- A stacked **Users by Month** bar chart of the summary tag history.
 
 Its time range is fixed to roughly the last year and the time picker is hidden, so the window always matches the
 one-year retention of the summary tags. To change it, edit `time.from` / `time.to` in the dashboard JSON before
@@ -274,16 +279,16 @@ importing, or unset `timepicker.hidden`.
 
 ### Adapting the Dashboard for Single User-Type Mode
 
-The shipped `Usage Tracking Dashboard.json` is built for the four-tier tags. When the tracker runs with
-`User_Type_Mode = "single"` it writes only `SystemLinkUsageTracking.Summary.ActiveUsers`, so retarget the imported
+The shipped `User Metrics Dashboard.json` is built for the four-tier tags. When the tracker runs with
+`User_Type_Mode = "single"` it writes only `SystemLinkUserMetrics.Summary.ActiveUsers`, so retarget the imported
 dashboard's panels at that tag (no separate dashboard file is needed). After importing the dashboard, open it, click
 **Edit**, and:
 
 1. **Stat panels.** Delete the *Standard Users*, *Operator Users*, *Collaborator Users*, and *Total Tracked Users*
    stat panels. Edit the remaining stat panel: point its tag query at
-   `SystemLinkUsageTracking.Summary.ActiveUsers` (query type **History**) and rename the panel title to *Active Users*.
-2. **Usage by Month (bar chart).** Edit the panel and remove the *Standard Users*, *Operator Users*, and
-   *Collaborator Users* queries, leaving one query pointed at `SystemLinkUsageTracking.Summary.ActiveUsers` (query
+   `SystemLinkUserMetrics.Summary.ActiveUsers` (query type **History**) and rename the panel title to *Active Users*.
+2. **Users by Month (bar chart).** Edit the panel and remove the *Standard Users*, *Operator Users*, and
+   *Collaborator Users* queries, leaving one query pointed at `SystemLinkUserMetrics.Summary.ActiveUsers` (query
    type **History**). In the panel's field/override settings, update the series display name to *Active Users* (remove
    the old `CasualUsers -> Casual Users` style renames for the deleted series).
 3. **Save** the dashboard.
@@ -297,7 +302,7 @@ dashboard's panels at that tag (no separate dashboard file is needed). After imp
 **Visualization overview.** Five stat panels across the top show the latest headcount for each tier — Casual,
 Standard, Operator, and Collaborator — plus a combined total. Each reads its summary tag's history and displays the
 most recent value over a sparkline of the preceding months. Below them, the stacked
-*Usage by Month* bar chart plots the summary tag history as one bar per calendar month, with the four tiers stacked
+*Users by Month* bar chart plots the summary tag history as one bar per calendar month, with the four tiers stacked
 within each bar.
 
 **Key metrics.** Casual and Standard classify users by *how often* they were active in a month; Operator and
@@ -318,7 +323,7 @@ fleet-wide count that counts each person once, use the CSV exporter described be
 
 ## Exporting to CSV and Cross-Instance Usage Reconciliation
 
-Run _Usage Data CSV Exporter.ipynb_ (publish and execute like the tracker, or run interactively) to write a
+Run _User Metrics CSV Exporter.ipynb_ (publish and execute like the tracker, or run interactively) to write a
 **long-format** CSV — one row per historian point per user:
 
 | column | meaning |
@@ -408,7 +413,8 @@ agree with each instance's own dashboard.
 | Run is slow and appears to stall | The Tag and Tag Historian services rate-limit (HTTP 429) on large tenants. Both notebooks retry with exponential backoff and self-throttle to the allowed rate; let the run finish. |
 | HTTP 403 from `/niauth` or `/niuser` | The API key cannot read users or authorization policies. Both are required for Operator/Collaborator classification. |
 | Dashboard panels show *No data* | The tracker has not completed a run yet, the dashboard was bound to the wrong data source at import, or `Tag_Prefix` does not match the tracker's `TAG_PREFIX`. |
-| Stat panels populate but *Usage by Month* is empty | Summary points are written once per calendar month, so a newly deployed tracker shows nothing until it has classified at least one closed month. |
+| Stat panels populate but *Users by Month* is empty | Summary points are written once per calendar month, so a newly deployed tracker shows nothing until it has classified at least one closed month. |
+| *Standard Users* stays at 0 | Standard requires `Standard_User_Min_Logins` distinct active days within the lookback window, and per-user history only starts accumulating once the routine begins running. A recently deployed tracker has too few recorded points for anyone to qualify, so active users land in Casual until the routine has run daily for long enough. |
 | Tag history is capped at roughly 30 days | The historian honored only its default window. The tracker sets both `nitagHistoryTTLDays` and `nitagMaxHistoryDays` for this reason; for tags created before that, set `REASSERT_TAG_METADATA = True` for a single run to push the retention values onto existing tags. |
 | Exporter raises `PSEUDONYMIZATION_SECRET must be changed ...` | `Email_Output` or `User_Id_Output` is `"pseudonymized"` while the secret is still the placeholder. Replace the secret, or keep the default `Email_Output = "none"`. |
 | Exported CSV has fewer users than expected | Users with no permissions are not tracked at all, and a user is skipped when its tag has neither in-range history nor a current value inside the range. |
