@@ -169,6 +169,12 @@ Priority is **collaborator > operator > standard > casual**: each user is counte
 higher-privilege classification winning. The counts written to the summary tags are `len(casual)`, `len(standard)`,
 `len(operators)`, and `len(collaborators)` for the most recent month.
 
+> **Role counts follow current permissions.** Rules 2 and 3 look back over a rolling window and do not require
+> activity in the month, so they are additionally restricted to users who still hold at least one permission at the
+> time of the run. Without that, a user whose access was revoked — or who left the organization — would keep being
+> counted as an operator or collaborator for the whole lookback window, because their per-user tag still carries the
+> last role it was written with.
+
 > **Administrators and other broadly-permissioned users are counted.** Both role rules require a user's permissions to
 > be a *subset* of that role's, so anyone holding permissions beyond both roles — administrators most obviously — is
 > not a collaborator or an operator. They are still tracked and still counted: they fall through to **Casual or
@@ -179,11 +185,15 @@ higher-privilege classification winning. The counts written to the summary tags 
 > rules and the collaborator > operator > standard > casual priority do not apply, and the single `Summary.ActiveUsers` count equals
 > the number of distinct users active that month.
 
-> **"Most recent month" excludes the current, in-progress month** unless `Include_Partial_Trailing_Month` is `True`.
-> The summary tags therefore reflect the latest *completed* month, so a point written today (in the still-open month)
-> does not appear in any count until that month completes on the next run in the following month. Combined with the
+> **"Most recent month" excludes the current, in-progress month.** The summary tags reflect the latest *completed*
+> month, so a point written today (in the still-open month) does not appear in any count until that month completes
+> on the next run in the following month. Combined with the
 > `updated`-field activity signal above, this is why a user who becomes active — or is granted a permission — during
 > the current month may not be reflected in the counts until the following month.
+>
+> Each month is written exactly once and never revised: the Tag Historian *appends* a value at a timestamp rather
+> than replacing it, so re-writing an open month on every daily run would stack duplicate points at the same
+> month-start timestamp instead of updating the count.
 
 ## Important Parameters
 
@@ -200,8 +210,7 @@ notebook variables (not the environment) except where noted.
 | `Standard_User_Min_Logins` | `25` | Minimum distinct logins in the lookback window to classify a user as *standard*. |
 | `Standard_User_Period_Months` | `12` | Rolling lookback window (months) for the standard-user login count. |
 | `Target_Permission_Period_Months` | `12` | Rolling lookback window (months) for detecting operator/collaborator role. |
-| `Include_Partial_Trailing_Month` | `False` | If `True`, the current in-progress month is classified; otherwise only complete months are. |
-| `User_Type_Mode` | `"tiered"` | `"tiered"` writes the Casual / Standard / Operator / Collaborator counts. `"single"` is for instances with only one license tier: every user active in a month is counted once as **Active Users** (the `Standard_User_*` and `Target_Permission_*` thresholds and the permission lookup are skipped), and only the `Summary.ActiveUsers` tag is written. |
+| `User_Type_Mode` | `"tiered"` | `"tiered"` writes the Casual / Standard / Operator / Collaborator counts. `"single"` is for instances with only one license tier: every user active in a month is counted once as **Active Users** (the `Standard_User_*` and `Target_Permission_*` thresholds and the permission lookup are skipped), and only the `Summary.ActiveUsers` tag is written. Set near the top of the notebook, because it also disables the authorization queries. |
 
 The classification parameters are **baked into the summary tags at write time**. Changing them changes future counts
 but does not rewrite history already stored in the historian.
@@ -238,10 +247,10 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 1. From the SLE main menu open **Automation >> Scripts**, click **Upload Files**, and select
    _User Metrics Tracker.ipynb_.
 2. In the first code cell set `TAG_PREFIX` and `WORKSPACE_TO_USE`, and set `TEST_MAX_USERS = None` for a real
-   deployment. In the classification-parameters cell adjust `Standard_User_Min_Logins`,
-   `Standard_User_Period_Months`, `Target_Permission_Period_Months`, and
-   `Include_Partial_Trailing_Month` as needed. For an instance with only one license tier set
-   `User_Type_Mode = "single"` (the default `"tiered"` keeps the Casual / Standard / Operator / Collaborator split).
+   deployment. For an instance with only one license tier set `User_Type_Mode = "single"` in that same cell (the
+   default `"tiered"` keeps the Casual / Standard / Operator / Collaborator split). In the
+   classification-parameters cell adjust `Standard_User_Min_Logins`, `Standard_User_Period_Months`, and
+   `Target_Permission_Period_Months` as needed.
 3. Right-click the notebook, select **Publish to SystemLink**, choose the workspace, select **Periodic Execution**,
    and click **Publish to SystemLink**.
 
@@ -266,9 +275,13 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 3. Click **New** in the upper-right corner and select **Import**.
 4. Click **Upload dashboard JSON file** and select _User Metrics Dashboard.json_.
 5. Change the dashboard name if needed, select a folder, modify the UID to ensure uniqueness, and click **Import**.
+6. Open the dashboard and set the **Workspace** picker at the top to the workspace the tracker writes to (the one
+   matching `WORKSPACE_TO_USE`). If the panels are empty after import, this is almost always the reason.
 
 The dashboard contains:
 
+- A **Workspace** variable that scopes every panel, so the dashboard works against whichever workspace the tracker
+  was pointed at rather than only the default one.
 - Five **stat panels** showing the latest Casual / Standard / Operator / Collaborator counts plus a combined total,
   each with a sparkline of that tier's recent history.
 - A stacked **Users by Month** bar chart of the summary tag history.

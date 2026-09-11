@@ -123,7 +123,7 @@
           "refId": "A",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         }
       ],
       "title": "Casual Users",
@@ -194,7 +194,7 @@
           "refId": "A",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         }
       ],
       "title": "Standard Users",
@@ -265,7 +265,7 @@
           "refId": "A",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         }
       ],
       "title": "Operator Users",
@@ -336,7 +336,7 @@
           "refId": "A",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         }
       ],
       "title": "Collaborator Users",
@@ -407,7 +407,7 @@
           "refId": "A",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         },
         {
           "datasource": {
@@ -419,7 +419,7 @@
           "refId": "B",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         },
         {
           "datasource": {
@@ -431,7 +431,7 @@
           "refId": "C",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         },
         {
           "datasource": {
@@ -443,7 +443,7 @@
           "refId": "D",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         }
       ],
       "title": "Total Tracked Users",
@@ -623,7 +623,7 @@
           "refId": "A",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         },
         {
           "datasource": {
@@ -635,7 +635,7 @@
           "refId": "B",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         },
         {
           "datasource": {
@@ -647,7 +647,7 @@
           "refId": "C",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         },
         {
           "datasource": {
@@ -660,7 +660,7 @@
           "refId": "D",
           "showTagPath": false,
           "type": "History",
-          "workspace": ""
+          "workspace": "$workspace"
         }
       ],
       "title": "Users by Month",
@@ -705,7 +705,28 @@
     "licensing"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "ni-slworkspace-datasource",
+          "uid": "ni-slworkspace-datasource"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Workspace",
+        "multi": false,
+        "name": "workspace",
+        "options": [],
+        "query": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-1y",
