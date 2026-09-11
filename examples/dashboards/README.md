@@ -69,7 +69,7 @@ Tracks SystemLink user activity and license-tier usage. A daily notebook classif
 **Key Features:**
 - Latest completed-month stat panels (Casual, Standard, Operator, Collaborator, plus a combined total) with sparklines, alongside a stacked "Users by Month" bar chart, all sourced from the SystemLink Tags data source.
 - Permission-based tiering computed by the accompanying User Metrics Tracker notebook (per-user role tags + monthly summary tags), so the dashboard stays purely presentational.
-- Portable across environments: uses the templated SystemLink Tags data source and a Workspace variable, and carries no workspace- or product-specific IDs.
+- Portable across environments: uses the templated SystemLink Tags data source and a variable naming the workspace that holds the tracker's tags, and carries no workspace- or product-specific IDs.
 - Optional User Metrics CSV Exporter notebook produces per-user history for cross-instance, de-duplicated usage reconciliation; email and user id can each be pseudonymized (opt-in, and required for the cross-instance union).
 
 <!--

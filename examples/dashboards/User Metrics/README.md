@@ -283,13 +283,18 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 3. Click **New** in the upper-right corner and select **Import**.
 4. Click **Upload dashboard JSON file** and select _User Metrics Dashboard.json_.
 5. Change the dashboard name if needed, select a folder, modify the UID to ensure uniqueness, and click **Import**.
-6. Open the dashboard and set the **Workspace** picker at the top to the workspace the tracker writes to (the one
-   matching `WORKSPACE_TO_USE`). If the panels are empty after import, this is almost always the reason.
+6. Open the dashboard and set the **Metrics tag source** picker at the top to the same workspace the tracker writes
+   to — the one matching `WORKSPACE_TO_USE` in _User Metrics Tracker.ipynb_ (leave it on the default workspace if
+   `WORKSPACE_TO_USE` is `None`). If the panels are empty after import, a mismatch here is almost always the reason.
+
+> **This picker does not filter users.** It only tells the dashboard which workspace to read the metrics tags from.
+> The counts always cover every user on the instance, regardless of which workspace is selected — a user is not
+> "in" the selected workspace, the *tags* are.
 
 The dashboard contains:
 
-- A **Workspace** variable that scopes every panel, so the dashboard works against whichever workspace the tracker
-  was pointed at rather than only the default one.
+- A **Metrics tag source** variable that points every panel at the workspace holding the tracker's tags, so the
+  dashboard works against whichever workspace the tracker was configured for rather than only the default one.
 - Five **stat panels** showing the latest Casual / Standard / Operator / Collaborator counts plus a combined total,
   each with a sparkline of that tier's recent history.
 - A stacked **Users by Month** bar chart of the summary tag history.
@@ -334,10 +339,12 @@ Collaborator classify them by *permission*. The exact rules are in
 Historian, and the dashboard reads those tags directly through the SystemLink Tags data source. No computation runs
 at view time, so the dashboard renders at the same speed regardless of how many users the instance has.
 
-**Interactive features.** The dashboard defines a single **Workspace** variable, which scopes every panel to the
-workspace the tracker writes to; set it after importing. Beyond that it is deliberately presentational: the time
-picker is hidden so the window always matches the one-year retention of the summary tags. The other import-time
-choice is which SystemLink Tags data source to bind to, since the panels reference it as a template input.
+**Interactive features.** The dashboard defines a single **Metrics tag source** variable, naming the workspace that
+holds the tracker's tags; set it after importing to match the tracker's `WORKSPACE_TO_USE`. It selects where the
+metrics are *read from* and does not filter which users are counted. Beyond that the dashboard is deliberately
+presentational: the time picker is hidden so the window always matches the one-year retention of the summary tags.
+The other import-time choice is which SystemLink Tags data source to bind to, since the panels reference it as a
+template input.
 
 **Refresh.** The dashboard has no auto-refresh interval, because the underlying data changes at most once a day when
 the routine runs. Reload the page (or set a refresh interval in Grafana) to pick up the newest month.
@@ -437,7 +444,7 @@ agree with each instance's own dashboard.
 | Notebook raises `A workspace ID is required` or `Could not resolve a workspace ID` | The API key has no default workspace. Set `WORKSPACE_TO_USE` (tracker) or `Workspace` (exporter) to a workspace name or ID. |
 | Run is slow and appears to stall | The Tag and Tag Historian services rate-limit (HTTP 429) on large tenants. Both notebooks retry with exponential backoff and self-throttle to the allowed rate; let the run finish. |
 | HTTP 403 from `/niauth` or `/niuser` | The API key cannot read users or authorization policies. Both are required for Operator/Collaborator classification. |
-| Dashboard panels show *No data* | The tracker has not completed a run yet, the dashboard was bound to the wrong data source at import, or `Tag_Prefix` does not match the tracker's `TAG_PREFIX`. |
+| Dashboard panels show *No data* | The tracker has not completed a run yet, the **Metrics tag source** variable does not match the tracker's `WORKSPACE_TO_USE`, the dashboard was bound to the wrong data source at import, or `Tag_Prefix` does not match the tracker's `TAG_PREFIX`. |
 | Stat panels populate but *Users by Month* is empty | Summary points are written once per calendar month, so a newly deployed tracker shows nothing until it has classified at least one closed month. |
 | *Standard Users* stays at 0 | Standard requires `Standard_User_Min_Logins` distinct active days within the lookback window, and per-user history only starts accumulating once the routine begins running. A recently deployed tracker has too few recorded points for anyone to qualify, so active users land in Casual until the routine has run daily for long enough. |
 | Tag history is capped at roughly 30 days | The historian honored only its default window. The tracker sets both `nitagHistoryTTLDays` and `nitagMaxHistoryDays` for this reason; for tags created before that, set `REASSERT_TAG_METADATA = True` for a single run to push the retention values onto existing tags. |

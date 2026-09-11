@@ -713,9 +713,10 @@
           "uid": "ni-slworkspace-datasource"
         },
         "definition": "",
+        "description": "Workspace that the User Metrics Tracker writes its tags to. This only tells the dashboard where to read the metrics from - it does not filter which users are counted. Set it to match WORKSPACE_TO_USE in the tracker notebook.",
         "hide": 0,
         "includeAll": false,
-        "label": "Workspace",
+        "label": "Metrics tag source",
         "multi": false,
         "name": "workspace",
         "options": [],
