@@ -55,8 +55,10 @@ is intended for administrators and license owners who need an ongoing, self-upda
 running any analysis by hand. Because the tracker has already reduced the raw per-user activity into the
 casual / standard / operator / collaborator counts and stored them as historized tags, the dashboard is purely presentational:
 
-- **Current headcount by tier** — the stat panels show today's casual, standard, operator, and collaborator counts
-  plus a combined total, giving an immediate read on how the active population is distributed across license tiers.
+- **Latest completed month by tier** — the stat panels show the casual, standard, operator, and collaborator counts
+  for the most recently *closed* calendar month, plus a combined total, giving an immediate read on how the active
+  population is distributed across license tiers. They are not a live "today" figure: the tracker only writes a
+  month's point once that month has ended, so the value lags by up to one month.
 - **Trend over time** — the *Users by Month* chart plots the monthly history, so you can see whether standard/operator
   usage is growing, plateauing, or seasonal. This is the view that supports questions like *"are we approaching a
   license tier limit?"* or *"did that rollout change how many people log in?"*
@@ -116,7 +118,7 @@ classifies users per month, and writes the results to count tags:
 
 | Tag | Type | Retention | Meaning |
 | --- | --- | --- | --- |
-| `SystemLinkUserMetrics.UserRole.<userId>` | Int32 | duration (~18 months) | latest activity time / role code (0 none, 1 Operator, 2 Collaborator) per user |
+| `SystemLinkUserMetrics.UserRole.<userId>` | Int32 | duration (~24 months) | latest activity time / role code (0 none, 1 Operator, 2 Collaborator) per user |
 | `SystemLinkUserMetrics.Summary.CasualUsers` | Int32 | duration (~1 year) | casual-user count, one point per calendar month |
 | `SystemLinkUserMetrics.Summary.StandardUsers` | Int32 | duration (~1 year) | standard-user count, one point per calendar month |
 | `SystemLinkUserMetrics.Summary.OperatorUsers` | Int32 | duration (~1 year) | operator (write-permission) count, one point per calendar month |
@@ -128,8 +130,9 @@ classifies users per month, and writes the results to count tags:
 > monthly-point, and anchoring behavior described below applies identically to this tag.
 
 All tags use rolling retention sized to what the dashboard actually needs rather than growing without bound. The
-per-user and summary tags use **duration** retention: the per-user window (~18 months) covers the classification
-lookback, and the summary window (~1 year) covers the dashboard's `now-1y` plot. Writing one summary point per
+per-user and summary tags use **duration** retention: the per-user window (~24 months) covers the dashboard's twelve
+plotted months *plus* the twelve-month classification lookback each of those months needs, and the summary window
+(~1 year) covers the dashboard's `now-1y` plot. Writing one summary point per
 calendar month builds the monthly trend directly in the Tag Historian within that window. The retention day counts are
 defined at the top of the tracker notebook and mirror the analysis parameters below; keep them in sync if those
 parameters change.
@@ -174,6 +177,11 @@ higher-privilege classification winning. The counts written to the summary tags 
 > time of the run. Without that, a user whose access was revoked — or who left the organization — would keep being
 > counted as an operator or collaborator for the whole lookback window, because their per-user tag still carries the
 > last role it was written with.
+>
+> For the **most recent month** the operator and collaborator counts are taken from the permissions resolved during
+> that run rather than from tag history. A per-user tag only records a new role code when the user's activity
+> timestamp advances, so a role granted or revoked since the user last logged in would otherwise not appear until
+> their next login. Earlier, already-closed months keep the roles recorded in their own history.
 
 > **Administrators and other broadly-permissioned users are counted.** Both role rules require a user's permissions to
 > be a *subset* of that role's, so anyone holding permissions beyond both roles — administrators most obviously — is
@@ -246,11 +254,11 @@ use the **same** secret (a different secret yields non-matching tokens for the s
 
 1. From the SLE main menu open **Automation >> Scripts**, click **Upload Files**, and select
    _User Metrics Tracker.ipynb_.
-2. In the first code cell set `TAG_PREFIX` and `WORKSPACE_TO_USE`, and set `TEST_MAX_USERS = None` for a real
-   deployment. For an instance with only one license tier set `User_Type_Mode = "single"` in that same cell (the
-   default `"tiered"` keeps the Casual / Standard / Operator / Collaborator split). In the
-   classification-parameters cell adjust `Standard_User_Min_Logins`, `Standard_User_Period_Months`, and
-   `Target_Permission_Period_Months` as needed.
+2. In the first code cell set `TAG_PREFIX` and `WORKSPACE_TO_USE`. For an instance with only one license tier set
+   `User_Type_Mode = "single"` in that same cell (the default `"tiered"` keeps the Casual / Standard / Operator /
+   Collaborator split). In the classification-parameters cell adjust `Standard_User_Min_Logins`,
+   `Standard_User_Period_Months`, and `Target_Permission_Period_Months` as needed, and leave `TEST_MAX_USERS = None`
+   there for a real deployment.
 3. Right-click the notebook, select **Publish to SystemLink**, choose the workspace, select **Periodic Execution**,
    and click **Publish to SystemLink**.
 
@@ -312,9 +320,9 @@ dashboard's panels at that tag (no separate dashboard file is needed). After imp
 
 ## Dashboard Features
 
-**Visualization overview.** Five stat panels across the top show the latest headcount for each tier — Casual,
-Standard, Operator, and Collaborator — plus a combined total. Each reads its summary tag's history and displays the
-most recent value over a sparkline of the preceding months. Below them, the stacked
+**Visualization overview.** Five stat panels across the top show the most recently completed month's headcount for
+each tier — Casual, Standard, Operator, and Collaborator — plus a combined total. Each reads its summary tag's history
+and displays the most recent value over a sparkline of the preceding months. Below them, the stacked
 *Users by Month* bar chart plots the summary tag history as one bar per calendar month, with the four tiers stacked
 within each bar.
 
@@ -326,9 +334,13 @@ Collaborator classify them by *permission*. The exact rules are in
 Historian, and the dashboard reads those tags directly through the SystemLink Tags data source. No computation runs
 at view time, so the dashboard renders at the same speed regardless of how many users the instance has.
 
-**Interactive features.** The dashboard is deliberately presentational: it defines no template variables, and the
-time picker is hidden so the window always matches the one-year retention of the summary tags. The only import-time
+**Interactive features.** The dashboard defines a single **Workspace** variable, which scopes every panel to the
+workspace the tracker writes to; set it after importing. Beyond that it is deliberately presentational: the time
+picker is hidden so the window always matches the one-year retention of the summary tags. The other import-time
 choice is which SystemLink Tags data source to bind to, since the panels reference it as a template input.
+
+**Refresh.** The dashboard has no auto-refresh interval, because the underlying data changes at most once a day when
+the routine runs. Reload the page (or set a refresh interval in Grafana) to pick up the newest month.
 
 **Use cases.** See how the active population is distributed across license tiers, watch whether Operator or Standard
 usage is trending toward a tier limit, and confirm whether a rollout changed how many people actually log in. For a
