@@ -63,7 +63,7 @@
         "type": "ni-sltag-datasource",
         "uid": "${DS_SYSTEMLINK_TAGS}"
       },
-      "description": "People who used SystemLink this month, but only occasionally \u2014 not regularly enough to count as standard users.",
+      "description": "People who used SystemLink during the most recently completed month, but only occasionally \u2014 not regularly enough to count as standard users.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -134,7 +134,7 @@
         "type": "ni-sltag-datasource",
         "uid": "${DS_SYSTEMLINK_TAGS}"
       },
-      "description": "People who used SystemLink this month and come back regularly, based on how many separate days they were active over the past year.",
+      "description": "People who used SystemLink during the most recently completed month and come back regularly, based on how many separate days they were active over the past year.",
       "fieldConfig": {
         "defaults": {
           "color": {
